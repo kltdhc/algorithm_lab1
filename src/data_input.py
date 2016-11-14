@@ -25,7 +25,7 @@ wfile = open('/home/wanghao/workspace/algorithm_lab1/code/data/data.txt.train', 
 print(category)
 
 for line in storage[1:]:
-    wfile.write('%s '%line[0])
+    wfile.write('%s '%line[1])
     for j in range(2, len(storage[0])):
         if line[j][0] >= 'a' and line[j][0] <= 'z':
             temp = ord(line[j][0]) - ord('a')
