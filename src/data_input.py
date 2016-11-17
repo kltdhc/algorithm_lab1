@@ -2,7 +2,7 @@ import csv
 import math
 
 storage = []
-with open('/home/wanghao/workspace/algorithm_lab1/train.csv') as csvfile:
+with open('../data/train.csv') as csvfile:
     reader = csv.reader(csvfile, delimiter=',', quotechar='|')
     for line in reader:
         storage.append(line)
@@ -20,7 +20,7 @@ axis = [0 for _ in range(0, len(storage[0]))]
 for j in range(3, len(storage[0])):
     axis[j] = axis[j-1] + category[j-1]
 
-wfile = open('/home/wanghao/workspace/algorithm_lab1/code/data/data.txt.train', 'w')
+wfile = open('../data/data.txt.train', 'w')
 
 print(category)
 
