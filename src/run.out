@@ -1,0 +1,41 @@
+Now we are training and validating hyperperameters: {'subsample': 1, 'learning_rate': 0.001, 'max_depth': 2, 'silent': True, 'objective': 'reg:linear', 'booster': 'gbtree', 'eval_metric': 'rmse', 'min_child_weight': 1}.
+[0]	train-rmse:5.33592	dev-rmse:5.26882
+Multiple eval metrics have been passed: 'dev-rmse' will be used for early stopping.
+
+Will train until dev-rmse hasn't improved in 20 rounds.
+[100]	train-rmse:5.10969	dev-rmse:5.04199
+[200]	train-rmse:4.91664	dev-rmse:4.8488
+[300]	train-rmse:4.75244	dev-rmse:4.68438
+[400]	train-rmse:4.61327	dev-rmse:4.54494
+[500]	train-rmse:4.49572	dev-rmse:4.42724
+[600]	train-rmse:4.39675	dev-rmse:4.32813
+[700]	train-rmse:4.31342	dev-rmse:4.2446
+[800]	train-rmse:4.24341	dev-rmse:4.17449
+[900]	train-rmse:4.1847	dev-rmse:4.11637
+[1000]	train-rmse:4.13546	dev-rmse:4.06783
+[1100]	train-rmse:4.09415	dev-rmse:4.02723
+[1200]	train-rmse:4.05945	dev-rmse:3.99325
+[1300]	train-rmse:4.0302	dev-rmse:3.96463
+[1400]	train-rmse:4.00547	dev-rmse:3.94032
+[1500]	train-rmse:3.98461	dev-rmse:3.91985
+[1600]	train-rmse:3.96689	dev-rmse:3.90267
+[1700]	train-rmse:3.95184	dev-rmse:3.88815
+[1800]	train-rmse:3.93901	dev-rmse:3.87585
+[1900]	train-rmse:3.92802	dev-rmse:3.86535
+[2000]	train-rmse:3.91858	dev-rmse:3.8564
+[2100]	train-rmse:3.9104	dev-rmse:3.84871
+[2200]	train-rmse:3.9032	dev-rmse:3.84194
+[2300]	train-rmse:3.89689	dev-rmse:3.83605
+[2400]	train-rmse:3.89131	dev-rmse:3.83085
+[2500]	train-rmse:3.88633	dev-rmse:3.82627
+[2600]	train-rmse:3.88184	dev-rmse:3.82215
+[2700]	train-rmse:3.87777	dev-rmse:3.81844
+[2800]	train-rmse:3.87408	dev-rmse:3.81511
+[2900]	train-rmse:3.87073	dev-rmse:3.81212
+[3000]	train-rmse:3.86764	dev-rmse:3.80939
+[3100]	train-rmse:3.86478	dev-rmse:3.80688
+[3200]	train-rmse:3.86211	dev-rmse:3.80458
+[3300]	train-rmse:3.85961	dev-rmse:3.80243
+[3400]	train-rmse:3.85728	dev-rmse:3.80044
+[3500]	train-rmse:3.85507	dev-rmse:3.79859
+[3600]	train-rmse:3.85298	dev-rmse:3.79685
