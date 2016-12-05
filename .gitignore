@@ -90,3 +90,6 @@ ENV/
 
 # nohup out
 *nohup.out
+
+# Pycharm setting directory
+.idea

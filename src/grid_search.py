@@ -9,7 +9,7 @@ import numpy as np
 import itertools
 import argparse
 import pickle
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, precision_score
 
 
 def prepare_data():
@@ -52,12 +52,12 @@ def search_xgb_params(dtrain, ddev):
     watch_list = [(dtrain, 'train'), (ddev, 'dev')]
     # use grid search to find the best hyperperameters
     param_grid = {
-        'booster': ['gbtree', 'gblinear', 'dart'],
-        'learning_rate': [0.001, 0.01, 0.1, 0.2],
-        'max_depth': [2, 3, 5],
-        'min_child_weight': [1, 3, 10],
+        'booster': ['gbtree', 'dart'],
+        'learning_rate': [0.01],
+        'max_depth': [3],
+        'min_child_weight': [1],
         'subsample': [1],
-        'objective': ['reg:linear', 'count:poisson', 'reg:tweedie'],
+        'objective': ['reg:linear'],
         'eval_metric': ['rmse'],
         'silent': [True]
     }
@@ -132,6 +132,28 @@ def test_target_func(train_X, train_y, dev_X, dev_y, target):
     print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, pred_y))))
 
 
+def test_cascade_prediction(train_X, train_y, dev_X, dev_y):
+    # bin_train_X, bin_train_y = [], []
+    # for x, y in zip(train_X, train_y):
+    #     if y > 8:
+    #         bin_train_X.append(x)
+    #         bin_train_y.append(1)
+    bin_train_X = train_X
+    bin_train_y = [1 if y > 8 else -1 for y in train_y]
+    bin_dev_y = [1 if y > 8 else -1 for y in dev_y]
+    bin_train_X = np.array(bin_train_X)
+    bin_train_y = np.array(bin_train_y)
+    bin_clf = xgb.XGBClassifier()
+    bin_clf.fit(bin_train_X, bin_train_y)
+    pred_scores = bin_clf.predict_proba(dev_X)
+    pred_y = bin_clf.predict(dev_X)
+    for pred_y, score in zip(pred_y, pred_scores):
+        if pred_y == 1:
+            print(score)
+    bin_pred_y = bin_clf.predict(dev_X)
+    print(precision_score(bin_dev_y, bin_pred_y))
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     prepare_group = parser.add_argument_group('preprocessing', 'transform and prepare the data')
@@ -144,6 +166,8 @@ def parse_args():
     model_compare_group = parser.add_argument_group('model', 'compare different models')
     model_compare_group.add_argument('--compare_model', action='store_true', help='trigger to do model comparison.')
     model_compare_group.add_argument('--models', choices=['xgb', 'knn', 'svm'], nargs='*', help='which model to compare.')
+
+    parser.add_argument('--cascade', action='store_true')
 
     xgb_test_group = parser.add_argument_group('xgb', 'experiment with xgb model')
     xgb_test_group.add_argument('--xgb', action='store_true', help='trigger to experiment with xgb model')
@@ -168,6 +192,9 @@ def main():
             test_knn_model(train_X, train_y, dev_X, dev_y)
         if 'svm' in args.models:
             test_svm_model(train_X, train_y, dev_X, dev_y)
+    if args.cascade:
+        train_X, train_y, dev_X, dev_y, test_X = load_data()
+        test_cascade_prediction(train_X, train_y, dev_X, dev_y)
     if args.xgb:
         train_X, train_y, dev_X, dev_y, test_X = load_data()
         if args.search:
