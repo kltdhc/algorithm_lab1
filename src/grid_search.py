@@ -9,6 +9,7 @@ import numpy as np
 import itertools
 import argparse
 import pickle
+import random
 from sklearn.metrics import mean_squared_error, precision_score
 
 
@@ -51,13 +52,23 @@ def search_xgb_params(dtrain, ddev):
     # note that the last one in watch list will be used for early stopping
     watch_list = [(dtrain, 'train'), (ddev, 'dev')]
     # use grid search to find the best hyperperameters
+    # param_grid = {
+    #     'booster': ['gbtree'],
+    #     'learning_rate': [0.001, 0.01, 0.005, 0.1],
+    #     'max_depth': [2, 3, 5],
+    #     'min_child_weight': [1],
+    #     'subsample': [0.8, 1],
+    #     'objective': ['reg:linear', 'count:poisson'],
+    #     'eval_metric': ['rmse'],
+    #     'silent': [True]
+    # }
     param_grid = {
-        'booster': ['gbtree', 'dart'],
-        'learning_rate': [0.01],
-        'max_depth': [3],
+        'booster': ['gbtree'],
+        'learning_rate': [0.005],
+        'max_depth': [5],
         'min_child_weight': [1],
-        'subsample': [1],
-        'objective': ['reg:linear'],
+        'subsample': [0.8],
+        'objective': ['count:poisson'],
         'eval_metric': ['rmse'],
         'silent': [True]
     }
@@ -84,6 +95,29 @@ def search_xgb_params(dtrain, ddev):
         best_params['num_boost_round'],
         best_params['rmse']))
     return best_params
+
+
+def test_tri_partition(train_X, train_y, dev_X, dev_y):
+    all_train_X = np.concatenate((train_X, dev_X))
+    all_train_y = np.concatenate((train_y, dev_y))
+    test_X, test_y = all_train_X[:int(0.2 * len(all_train_X))], all_train_y[:int(0.2 * len(all_train_y))]
+    dev_X, dev_y = all_train_X[int(0.2 * len(all_train_X)): int(0.4 * len(all_train_X))], all_train_y[int(0.2 * len(all_train_y)): int(0.4 * len(all_train_y))]
+    train_X, train_y = all_train_X[int(0.4 * len(all_train_X)):], all_train_y[int(0.4 * len(all_train_y)):]
+    dtrain = xgb.DMatrix(train_X, train_y)
+    ddev = xgb.DMatrix(dev_X, dev_y)
+    dtest = xgb.DMatrix(test_X, test_y)
+    watch_list = [(dtrain, 'train'), (ddev, 'dev'), (dtest, 'test')]
+    best_params = {
+        'booster': 'gbtree',
+        'learning_rate': 0.005,
+        'max_depth': 5,
+        'min_child_weight': 1,
+        'subsample': 0.8,
+        'objective': 'count:poisson',
+        'eval_metric': 'rmse',
+        'silent': True
+    }
+    xgb_model = xgb.train(params=best_params, dtrain=dtrain, num_boost_round=5000, evals=watch_list, verbose_eval=50)
 
 
 def test_xgb_model(train_X, train_y, dev_X, dev_y):
@@ -113,45 +147,66 @@ def test_svm_model(train_X, train_y, dev_X, dev_y):
 
 
 def test_target_func(train_X, train_y, dev_X, dev_y, target):
-    print('Testing target function {}'.format(target))
-    if target == 'log':
-        train_y = np.log(train_y)
-    elif target == 'sqrt':
-        train_y = np.sqrt(train_y)
-    elif target != 'orig':
-        raise ValueError('Unsupported target function {}.'.format(target))
-    clf = xgb.XGBRegressor()
-    clf.fit(train_X, train_y)
-    pred_y = clf.predict(dev_X)
-    if target == 'log':
-        pred_y = np.power(np.e, pred_y)
-    elif target == 'sqrt':
-        pred_y == np.power(pred_y, 2)
-    elif target != 'orig':
-        raise ValueError('Unsupported target function {}.'.format(target))
-    print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, pred_y))))
+    if target == 'blend':
+        train_y_orig = train_y
+        train_y_log = np.log(train_y)
+        train_y_sqrt = np.log(train_y)
+        clf_orig, clf_log, clf_sqrt = xgb.XGBRegressor(), xgb.XGBRegressor(), xgb.XGBRegressor()
+        clf_orig.fit(train_X, train_y_orig)
+        clf_log.fit(train_X, train_y_log)
+        clf_sqrt.fit(train_X, train_y_sqrt)
+        pred_y_orig, pred_y_log, pred_y_sqrt = clf_orig.predict(dev_X), clf_log.predict(dev_X), clf_sqrt.predict(dev_X)
+        final_pred_y = [(orig + np.e**lg + root**2) / 3 for orig, lg, root in zip(pred_y_orig, pred_y_log, pred_y_sqrt)]
+        print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, final_pred_y))))
+    else:
+        print('Testing target function {}'.format(target))
+        if target == 'log':
+            train_y = np.log(train_y)
+        elif target == 'sqrt':
+            train_y = np.sqrt(train_y)
+        elif target != 'orig':
+            raise ValueError('Unsupported target function {}.'.format(target))
+        clf = xgb.XGBRegressor()
+        clf.fit(train_X, train_y)
+        pred_y = clf.predict(dev_X)
+        if target == 'log':
+            pred_y = np.power(np.e, pred_y)
+        elif target == 'sqrt':
+            pred_y == np.power(pred_y, 2)
+        elif target != 'orig':
+            raise ValueError('Unsupported target function {}.'.format(target))
+        print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, pred_y))))
 
 
 def test_cascade_prediction(train_X, train_y, dev_X, dev_y):
     # bin_train_X, bin_train_y = [], []
     # for x, y in zip(train_X, train_y):
-    #     if y > 8:
+    #     if y >= 10:
     #         bin_train_X.append(x)
     #         bin_train_y.append(1)
+    #     else:
+    #         if random.random() < 0.1:
+    #             bin_train_X.append(x)
+    #             bin_train_y.append(0)
+    # print(len(bin_train_y))
     bin_train_X = train_X
-    bin_train_y = [1 if y > 8 else -1 for y in train_y]
-    bin_dev_y = [1 if y > 8 else -1 for y in dev_y]
+    bin_train_y = [1 if y >= 10 else 0 for y in train_y]
+    bin_dev_y = [1 if y >= 10 else 0 for y in dev_y]
     bin_train_X = np.array(bin_train_X)
     bin_train_y = np.array(bin_train_y)
     bin_clf = xgb.XGBClassifier()
     bin_clf.fit(bin_train_X, bin_train_y)
     pred_scores = bin_clf.predict_proba(dev_X)
-    pred_y = bin_clf.predict(dev_X)
-    for pred_y, score in zip(pred_y, pred_scores):
-        if pred_y == 1:
-            print(score)
     bin_pred_y = bin_clf.predict(dev_X)
-    print(precision_score(bin_dev_y, bin_pred_y))
+    print(sum(bin_pred_y))
+    print('Precision score for >= 10 prediction is {}.'.format(precision_score(bin_dev_y, bin_pred_y)))
+    clf = xgb.XGBRegressor()
+    clf.fit(train_X, train_y)
+    pred_y = clf.predict(dev_X)
+    final_pred_y = [y if bin_y == 0 else 10 for y, bin_y in zip(pred_y, bin_pred_y)]
+    print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, final_pred_y))))
+
+
 
 
 def parse_args():
@@ -161,13 +216,14 @@ def parse_args():
 
     target_group = parser.add_argument_group('target', 'compare which kind of target y.')
     target_group.add_argument('--compare_target', action='store_true', help='trigger to do target comparison')
-    target_group.add_argument('--targets', choices=['orig', 'log', 'sqrt'], nargs='*', help='which target to compare.')
+    target_group.add_argument('--targets', choices=['orig', 'log', 'sqrt', 'blend'], nargs='*', help='which target to compare.')
 
     model_compare_group = parser.add_argument_group('model', 'compare different models')
     model_compare_group.add_argument('--compare_model', action='store_true', help='trigger to do model comparison.')
     model_compare_group.add_argument('--models', choices=['xgb', 'knn', 'svm'], nargs='*', help='which model to compare.')
 
-    parser.add_argument('--cascade', action='store_true')
+    parser.add_argument('--cascade', action='store_true', help='trigger to test cascade prdiction')
+    parser.add_argument('--tri_partition', action='store_true', help='trigger to test train-dev-test partition on labelled data')
 
     xgb_test_group = parser.add_argument_group('xgb', 'experiment with xgb model')
     xgb_test_group.add_argument('--xgb', action='store_true', help='trigger to experiment with xgb model')
@@ -195,6 +251,9 @@ def main():
     if args.cascade:
         train_X, train_y, dev_X, dev_y, test_X = load_data()
         test_cascade_prediction(train_X, train_y, dev_X, dev_y)
+    if args.tri_partition:
+        train_X, train_y, dev_X, dev_y, test_X = load_data()
+        test_tri_partition(train_X, train_y, dev_X, dev_y)
     if args.xgb:
         train_X, train_y, dev_X, dev_y, test_X = load_data()
         if args.search:
@@ -209,6 +268,7 @@ def main():
             with gzip.open('../data/best_params.pickle.gz', 'rb') as fin:
                 best_params = pickle.load(fin)
         if args.predict:
+            print('Best parameters: {}'.format(best_params))
             dtrain = xgb.DMatrix(np.concatenate((train_X, dev_X)), np.concatenate((train_y, dev_y)))
             dtest = xgb.DMatrix(test_X)
             xgb_model = xgb.train(params=best_params['booster_params'], dtrain=dtrain,
@@ -216,7 +276,7 @@ def main():
             pred_y = xgb_model.predict(dtest)
             with open('../data/predict.txt', 'w') as fout:
                 for y in pred_y:
-                    fout.write('{}\n'.format(round(y)))
+                    fout.write('{}\n'.format(y))
 
 if __name__ == '__main__':
     main()
