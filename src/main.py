@@ -44,7 +44,7 @@ def load_data():
     train_y = pd.read_csv('../data/tmp/train_data.y.csv').values
     dev_X = pd.read_csv('../data/tmp/dev_data.x.csv').values
     dev_y = pd.read_csv('../data/tmp/dev_data.y.csv').values
-    test_X = pd.read_csv('../data/tmp/train_data.x.csv').values
+    test_X = pd.read_csv('../data/tmp/test_data.x.csv').values
     return train_X, train_y, dev_X, dev_y, test_X
 
 
@@ -243,6 +243,7 @@ def parse_args():
     xgb_test_group.add_argument('--xgb', action='store_true', help='trigger to experiment with xgb model')
     xgb_test_group.add_argument('--search', action='store_true', help='whether to find best parameters with grid search')
     xgb_test_group.add_argument('--predict', action='store_true', help='whether to predict labels for test data.')
+    xgb_test_group.add_argument('--gen_final_predict', action='store_true', help='trigger to generate the final file to submit')
     return parser.parse_args()
 
 
@@ -291,6 +292,13 @@ def main():
             with open('../data/output/predict.txt', 'w') as fout:
                 for y in pred_y:
                     fout.write('{}\n'.format(y))
+        if args.gen_final_predict:
+            ids = [int(l.strip().split(',')[0]) for l in open('../data/raw/test.csv', 'r') if not l.startswith('Id')]
+            pred_y = [float(l.strip()) for l in open('../data/output/predict.txt', 'r')]
+            with open('../data/output/final_predict.txt', 'w') as fout:
+                fout.write('Id,Score\n')
+                for id, y in zip(ids, pred_y):
+                    fout.write('{},{}\n'.format(id, y))
 
 if __name__ == '__main__':
     main()
