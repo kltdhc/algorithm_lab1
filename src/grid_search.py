@@ -10,7 +10,7 @@ import itertools
 import argparse
 import pickle
 import random
-from sklearn.metrics import mean_squared_error, precision_score
+from sklearn.metrics import mean_squared_error, precision_score, recall_score
 
 
 def prepare_data():
@@ -179,31 +179,45 @@ def test_target_func(train_X, train_y, dev_X, dev_y, target):
 
 
 def test_cascade_prediction(train_X, train_y, dev_X, dev_y):
-    # bin_train_X, bin_train_y = [], []
-    # for x, y in zip(train_X, train_y):
-    #     if y >= 10:
-    #         bin_train_X.append(x)
-    #         bin_train_y.append(1)
-    #     else:
-    #         if random.random() < 0.1:
-    #             bin_train_X.append(x)
-    #             bin_train_y.append(0)
-    # print(len(bin_train_y))
-    bin_train_X = train_X
-    bin_train_y = [1 if y >= 10 else 0 for y in train_y]
-    bin_dev_y = [1 if y >= 10 else 0 for y in dev_y]
+    thresh = 5
+    bin_train_X, bin_train_y = [], []
+    for x, y in zip(train_X, train_y):
+        if y == 1:
+            continue
+        if y >= thresh:
+            for i in range(1):
+                bin_train_X.append(x)
+                bin_train_y.append(1)
+        else:
+            bin_train_X.append(x)
+            bin_train_y.append(0)
+    bin_dev_y = [1 if y >= thresh else 0 for y in dev_y]
     bin_train_X = np.array(bin_train_X)
     bin_train_y = np.array(bin_train_y)
     bin_clf = xgb.XGBClassifier()
+    # from sklearn.svm import LinearSVC
+    # bin_clf = LinearSVC()
     bin_clf.fit(bin_train_X, bin_train_y)
-    pred_scores = bin_clf.predict_proba(dev_X)
     bin_pred_y = bin_clf.predict(dev_X)
     print(sum(bin_pred_y))
-    print('Precision score for >= 10 prediction is {}.'.format(precision_score(bin_dev_y, bin_pred_y)))
-    clf = xgb.XGBRegressor()
-    clf.fit(train_X, train_y)
-    pred_y = clf.predict(dev_X)
-    final_pred_y = [y if bin_y == 0 else 10 for y, bin_y in zip(pred_y, bin_pred_y)]
+    print('Precision score for >= {} prediction is {}.'.format(thresh, precision_score(bin_dev_y, bin_pred_y)))
+    print('Recall score for >= {} prediction is {}.'.format(thresh, recall_score(bin_dev_y, bin_pred_y)))
+    dtrain = xgb.DMatrix(train_X, train_y)
+    ddev = xgb.DMatrix(dev_X, dev_y)
+    watch_list = [(dtrain, 'train'), (ddev, 'dev')]
+    best_params = {
+        'booster': 'gbtree',
+        'learning_rate': 0.005,
+        'max_depth': 5,
+        'min_child_weight': 1,
+        'subsample': 0.8,
+        'objective': 'count:poisson',
+        'eval_metric': 'rmse',
+        'silent': True
+    }
+    clf = xgb.train(params=best_params, dtrain=dtrain, num_boost_round=3115, evals=watch_list, verbose_eval=200)
+    pred_y = clf.predict(ddev)
+    final_pred_y = [y if bin_y == 0 else max(y, thresh) for y, bin_y in zip(pred_y, bin_pred_y)]
     print('RMSE: {}'.format(math.sqrt(mean_squared_error(dev_y, final_pred_y))))
 
 

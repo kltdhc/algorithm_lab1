@@ -1,0 +1,20 @@
+4351
+Precision score for >= 5 prediction is 0.43461273270512524.
+Recall score for >= 5 prediction is 0.5155398037077427.
+[0]	train-rmse:5.33721	dev-rmse:5.27011
+[200]	train-rmse:5.01718	dev-rmse:4.9466
+[400]	train-rmse:4.50739	dev-rmse:4.43394
+[600]	train-rmse:4.12066	dev-rmse:4.05873
+[800]	train-rmse:3.91024	dev-rmse:3.88178
+[1000]	train-rmse:3.79647	dev-rmse:3.80049
+[1200]	train-rmse:3.72655	dev-rmse:3.7613
+[1400]	train-rmse:3.67993	dev-rmse:3.74079
+[1600]	train-rmse:3.64636	dev-rmse:3.72927
+[1800]	train-rmse:3.61897	dev-rmse:3.72188
+[2000]	train-rmse:3.596	dev-rmse:3.71708
+[2200]	train-rmse:3.57628	dev-rmse:3.71387
+[2400]	train-rmse:3.55807	dev-rmse:3.7112
+[2600]	train-rmse:3.54138	dev-rmse:3.70955
+[2800]	train-rmse:3.5261	dev-rmse:3.70833
+[3000]	train-rmse:3.51174	dev-rmse:3.70735
+RMSE: 3.7207153512120157
