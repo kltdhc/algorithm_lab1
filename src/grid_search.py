@@ -15,10 +15,10 @@ from sklearn.metrics import mean_squared_error, precision_score
 
 def prepare_data():
     print('Preparing data...')
-    train_data = pd.read_csv('../data/train.csv')
+    train_data = pd.read_csv('../data/raw/train.csv')
     # shuffle the train data to create new train data and dev data
     # train_data = train_data.sample(frac=1).reset_index(drop=True)
-    test_data = pd.read_csv('../data/test.csv')
+    test_data = pd.read_csv('../data/raw/test.csv')
     train_y = train_data.pop('Score')
     # concat train data and test data for global preprocessing
     all_data = pd.concat([train_data, test_data])
@@ -32,19 +32,19 @@ def prepare_data():
     train_X, dev_X = all_X[:int(train_data.shape[0]*0.7)], all_X[int(train_data.shape[0]*0.7):train_data.shape[0]]
     train_y, dev_y = train_y[:int(train_data.shape[0]*0.7)], train_y[int(train_data.shape[0]*0.7): train_data.shape[0]]
     test_X = all_X[train_data.shape[0]:]
-    train_X.to_csv('../data/train_data.x.csv', index=False, header=False)
-    train_y.to_csv('../data/train_data.y.csv', index=False, header=False)
-    dev_X.to_csv('../data/dev_data.x.csv', index=False, header=False)
-    dev_y.to_csv('../data/dev_data.y.csv', index=False, header=False)
-    test_X.to_csv('../data/test_data.x.csv', index=False, header=False)
+    train_X.to_csv('../data/tmp/train_data.x.csv', index=False, header=False)
+    train_y.to_csv('../data/tmp/train_data.y.csv', index=False, header=False)
+    dev_X.to_csv('../data/tmp/dev_data.x.csv', index=False, header=False)
+    dev_y.to_csv('../data/tmp/dev_data.y.csv', index=False, header=False)
+    test_X.to_csv('../data/tmp/test_data.x.csv', index=False, header=False)
 
 
 def load_data():
-    train_X = pd.read_csv('../data/train_data.x.csv').values
-    train_y = pd.read_csv('../data/train_data.y.csv').values
-    dev_X = pd.read_csv('../data/dev_data.x.csv').values
-    dev_y = pd.read_csv('../data/dev_data.y.csv').values
-    test_X = pd.read_csv('../data/train_data.x.csv').values
+    train_X = pd.read_csv('../data/tmp/train_data.x.csv').values
+    train_y = pd.read_csv('../data/tmp/train_data.y.csv').values
+    dev_X = pd.read_csv('../data/tmp/dev_data.x.csv').values
+    dev_y = pd.read_csv('../data/tmp/dev_data.y.csv').values
+    test_X = pd.read_csv('../data/tmp/train_data.x.csv').values
     return train_X, train_y, dev_X, dev_y, test_X
 
 
@@ -88,7 +88,7 @@ def search_xgb_params(dtrain, ddev):
         records.append({'booster_params': booster_params,
                         'num_boost_round': xgb_model.best_iteration + 1,
                         'rmse': xgb_model.best_score})
-    with open('../data/grid_search_records.json', 'w') as fout:
+    with open('../data/output/grid_search_records.json', 'w') as fout:
         json.dump(records, fout)
     print('Best parameters are: {} with num_boost_round as {} and rmse as {}'.format(
         best_params['booster_params'],
@@ -274,7 +274,7 @@ def main():
             xgb_model = xgb.train(params=best_params['booster_params'], dtrain=dtrain,
                                   num_boost_round=best_params['num_boost_round'])
             pred_y = xgb_model.predict(dtest)
-            with open('../data/predict.txt', 'w') as fout:
+            with open('../data/output/predict.txt', 'w') as fout:
                 for y in pred_y:
                     fout.write('{}\n'.format(y))
 
