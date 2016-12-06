@@ -40,11 +40,11 @@ def prepare_data():
 
 
 def load_data():
-    train_X = pd.read_csv('../data/tmp/train_data.x.csv').values
-    train_y = pd.read_csv('../data/tmp/train_data.y.csv').values
-    dev_X = pd.read_csv('../data/tmp/dev_data.x.csv').values
-    dev_y = pd.read_csv('../data/tmp/dev_data.y.csv').values
-    test_X = pd.read_csv('../data/tmp/test_data.x.csv').values
+    train_X = pd.read_csv('../data/tmp/train_data.x.csv', header=None).values
+    train_y = pd.read_csv('../data/tmp/train_data.y.csv', header=None).values
+    dev_X = pd.read_csv('../data/tmp/dev_data.x.csv', header=None).values
+    dev_y = pd.read_csv('../data/tmp/dev_data.y.csv', header=None).values
+    test_X = pd.read_csv('../data/tmp/test_data.x.csv', header=None).values
     return train_X, train_y, dev_X, dev_y, test_X
 
 
